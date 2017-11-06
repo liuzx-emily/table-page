@@ -60,8 +60,9 @@
         },
 
         // 功能：需要点击排序的列 默认为[] 起始为1
-        sorted_colomn: [1,2,3],
-
+        sorted_colomn: [1,2,3],        
+        sort_in_front:true,                     // 前台排序，默认为false
+        
         // 每页几条数据 默认为10 
         each_page_data_number: 20,
 
