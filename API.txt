@@ -45,12 +45,12 @@
         // 功能：单选多选
         // 效果：选中数据行变色；可以通过get_selected()方法获取选中数据
         selection: {
-            _type: 'checkbox',     // 单选'radio' 多选'checkbox' 无'neither'，默认'radio'
+            _type: 'checkbox',     // 单选'radio'[默认] 多选'checkbox' 无'neither'
             _colomn_shown: true,   // 是否显示按钮列，默认false
-            _width: 5              // 列宽(%)
+            _width: 5              // 按钮列的列宽(%)
         },
         
-        // 功能：点击"+"显示更多信息【暂不兼容IE低版本，慎用】
+        // 功能：点击"+"显示更多信息
         detail:{
             _key:['NAME','AGE'],                    // 格式：["","",..]
             _width:2                                // "+"的列宽(%)
@@ -84,13 +84,15 @@
 -----------------------------------------------------------------------------
 
 前后交互格式说明：
-    url: 初始化参数中的url        
+    url: 初始化参数中设置的url        
 	前 -> 后：json格式
         {
             page:1,         //当前页数
             number:20,      //每页几条数据
             year:2017,      //搜索条件(extra中的）
             name:'Liu'		//搜索条件(extra中的）
+            sort_name:'',
+            sort_method:''
         }
 	后 -> 前：json格式 
         {
