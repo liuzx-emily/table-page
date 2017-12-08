@@ -1,4 +1,15 @@
-﻿1 初始化：
+﻿------------------说明--------------------
+
+	table开发版本.js：
+        不兼容IE8，只用于开发、调试。
+
+    table.js:
+        table开发版本.js经过babel转换，得到兼容的版本。
+        兼容IE8
+
+--------------------------------------
+
+1 初始化：
     table1=new Table(params);
 	
     初始化参数说明：
@@ -6,62 +17,57 @@
         /* -----必填参数----- */  
 
         // 容器ID
-        container_id: 'tableDiv',
+        id: 'tableDiv',
 
         // ajax请求数据的地址    
         url: "xx/xxxxx.do", 
 
-        // 数据标识符  格式：["","",...] 每条数据的pid会存在当前行tr中
+        // 数据标识符  格式：["","",...] 每条数据的pid会以属性的形式存在当前行tr中
         pid:["pid_1","pid_2"],          
 
         // 标题行  格式：[{},{},{}...]
-        title_bar: [{
+        title: [{
             name: '姓名',                   // 名字
             width: 12.5,                    // 列宽(%)
             key: 'NAME',                    // 根据key从data中取值
-            formatter:function(value){      // 格式化 如果设置了key，则value是当前项的值。如果不设置key，则value是undefined
+            formatter:function(value){      // 格式化 value是根据key取到的值
                 return "...";
             },
-            show:(表达式),                  // 根据表达式的值是否为true，来决定是否显示该列。默认为true
-            operation:true,                 // 当前是否是操作列，默认为false
-            css: 'color:red;',              // 该列的样式
+            operation:true,         // 如果当前列是操作列(有可点击的按钮)，必须把此项置为true。默认为false
+            sort:1,                 // n点击排序[0不排序;1当前页排;2所有数据排(需要后台支持)]
         }],
 
         /* -----选填参数----- */
 
-        //搜索条件 格式：{} 默认为{}
-        extra:{
+        //搜索条件 默认为{}
+        search_terms:{
             year:2017,
             name:'Liu'
         },
 
         // 功能：自动添加序号
         auto_index: {
-            _if: true,              // 是否启用，默认false
-            _title: '序号',         // 标题
-            _width: 5               // 列宽(%)
+            show: true,            // 是否启用，默认false
+            title: '序号',         // 标题
+            width: 5               // 列宽(%)
         },
 
         // 功能：单选多选
         // 效果：选中数据行变色；可以通过get_selected()方法获取选中数据
         selection: {
-            _type: 'checkbox',     // 单选'radio'[默认] 多选'checkbox' 无'neither'
-            _colomn_shown: true,   // 是否显示按钮列，默认false
-            _width: 5              // 按钮列的列宽(%)
+            type: 'checkbox',     // 单选'radio'[默认]、多选'checkbox'
+            colomn_shown: true,   // 是否显示按钮列，默认false
+            width: 5              // 按钮列的列宽(%)
         },
         
         // 功能：点击"+"显示更多信息
         detail:{
-            _key:['NAME','AGE'],                    // 格式：["","",..]
-            _width:2                                // "+"的列宽(%)
-            _formatter:function(value1,value2){     //
+            key:['NAME','AGE'],                    // 格式：["","",..]
+            width:2,                               // "+"的列宽(%)
+            formatter:function(value1,value2){     //
                 return "...;"
             },
         },
-
-        // 功能：需要点击排序的列 默认为[] 起始为1
-        sorted_colomn: [1,2,3],        
-        sort_in_front:true,                     // 前台排序，默认为false
         
         // 每页几条数据 默认为10 
         each_page_data_number: 20,
@@ -72,12 +78,12 @@
 
 
 2 刷新表格：
-    table1.refresh(extra);          //有新的搜索条件（"查询"功能）
-    table1.refresh();               //无新的搜索条件（"增删改查"之后重刷表格）
+    table1.refresh(search_terms);   //有新的搜索条件（"查询"功能）
+    table1.refresh();               //无新的搜索条件（"增删改"之后重刷表格）
 
 
 3 如果启用了单选/多选效果，那么可以获取选中数据：get_selected()
-    table1.get_selected("pid_1")  //初始化参数的pid项中必须传"pid_1"
+    table1.get_selected("pid_1")  //初始化参数的pid项中必须传"pid_1"，才能取到
 
 
 
@@ -89,15 +95,15 @@
         {
             page:1,         //当前页数
             number:20,      //每页几条数据
-            year:2017,      //搜索条件(extra中的）
-            name:'Liu'		//搜索条件(extra中的）
-            sort_name:'',
-            sort_method:''
+            year:2017,      //搜索条件(search_terms中的）
+            name:'Liu'		//搜索条件(search_terms中的）
+            sort_name:'IS_ENABLE',  // 排序列（如果需要排序的话）
+            sort_method:'asc',         // 排序方式：'asc' 'desc'（如果需要排序的话）
         }
 	后 -> 前：json格式 
         {
             data:[{},{}]    //数据
-            count:30,       //数据总数
+            sum:30,       //数据总数
         }
 
 ------------------------------实例------------------------------
@@ -107,16 +113,16 @@
         /* -----必填参数----- */
 
         // 容器ID
-        container_id: 'tableDivPage',
+        id: 'tableDivPage',
 
         // ajax请求数据的地址    
-        url: basePath+"zdgl/queryZdgl.do",
+        url: basePath+"xx/yy.do",
 
-        // 数据标识符  格式：["","",...] 每条数据的pid会存在当前行tr中
-        pid:["CodeMapId","FLAG"],
+        // 数据标识符  格式["","",...] 每条数据的pid会以属性的形式存在当前行tr中
+        pid:["NAME","AGE","FLAG"],
 
         // 标题行  格式：[{},{},{}...]
-        title_bar: [{
+        title: [{
             name: '代码类别',
             width: 20,
             key: 'FLAG',
@@ -134,52 +140,46 @@
           }
         }, {
             name: '操作',
-            width: 40,
-            show: (fun_a()===1),        
+            width: 40,     
             formatter:function(){
                 var str="<a href='javascript:void(0);' title='修改' onclick='xg(this)'>修改</a>"
                          +"<a href='javascript:void(0);' title='删除' onclick='sc(this)'>删除</a>"
                          +"<a href='javascript:void(0);' title='详情' onclick='xq(this)'>详情</a>";
                 return str;
             },
-            operation:true
-            
+            operation:true            
         }],
 
         /* -----选填参数----- */
 
-        //搜索条件 格式：{} 默认为{}
-        extra:{
+        //搜索条件 默认为{}
+        search_terms:{
             flag : $("#CodeType").val(),
             is_enable : $("#yxx").val(),
         },
 
         // 功能：自动添加序号
         auto_index: {
-            _if: true,
-            _title: '序号',
-            _width: 20
+            show: true,
+            title: '序号',
+            width: 20
         },
 
         // 功能：单选多选
+        // 效果：选中数据行变色；可以通过get_selected()方法获取选中数据
         selection: {
-            _type: 'neither',
+            type: 'checkbox',     // 单选'radio'[默认]、多选'checkbox'
+            colomn_shown: false   // 是否显示按钮列，默认false
         },
 
         // 功能：点击"+"显示更多信息
         detail:{
-            _key:['NAME','AGE'],                    // 格式：["","",..]
-            _width:2                                // "+"的列宽(%)
-            _formatter:function(value1,value2){
-                return "<div style="line-height:50px;">年龄是"+value2+"</div>";
+            key:['NAME','AGE'],                    // 格式：["","",..]
+            width:2,                               // "+"的列宽(%)
+            formatter:function(value1,value2){
+                return "<div style='line-height:50px;'>"+value1的+"年龄是"+value2+"</div>";
             },
-        },
-
-        // 功能：需要添加"点标题，按照当前列排序"功能的列【选填，默认为无】
-        sorted_colomn: [1,2],
-
-        // 每页几条数据 默认为10 
-        each_page_data_number: 10,
+        }
     };
     table1 = new Table(params);
 
@@ -199,11 +199,11 @@
 点击查询，刷新表格（有新的搜索条件）
     function search(){
         // 取到新的搜索条件
-        var extra={
+        var search_terms={
             flag : $("#CodeType").val(),
             is_enable : $("#yxx").val(),
         };
         // 根据新的搜索条件，刷新表格
-        table1.refresh(extra);
+        table1.refresh(search_terms);
     }
 
