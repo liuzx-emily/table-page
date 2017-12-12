@@ -33,6 +33,10 @@ function Table(init_params) {
         width: init_params.selection._width || 2,
     };
 
+    // 功能：排序    
+    // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序【兼容：以后改成默认"front"！！】
+    this.sort = init_params.sort || 'back';
+
     // 功能：更多信息【选填】    
     init_params.detail = init_params.detail || {};
     this.detail = {
@@ -45,7 +49,7 @@ function Table(init_params) {
     var _this = this;
     if (init_params.sorted_colomn) {
         $.each(init_params.sorted_colomn, function(index, val) {
-            _this.title[val - 1].sort = 2;
+            _this.title[val - 1].sort = true;
         });
     }
 
@@ -89,7 +93,11 @@ Table.prototype = {
      *   build_html()：搭建html（包括table+分页）
      *   bind_events()：绑定所有事件
      *   refresh_all_kinds()：调用ajax刷新，具体刷新方式根据所传参数决定
-     *      
+     *   refresh_frontSort_effectes()：
+     *   		刷新表格后，需要维持和之前一样的排序效果。
+     *  		如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
+     *			后台排序：只需要在ajax请求时，加上排序相关参数
+     *   
      *  ---------------------------------- 
      *      
      */
@@ -99,6 +107,10 @@ Table.prototype = {
         if ($('style#table-css').length === 0) {
             this.add_style();
         }
+
+        // 初始化"排序方式"
+        this.reset_sort_methods();
+
         this.refresh_all_kinds(this.refresh_type.INIT);
     },
     // 搭建html（包括table+分页）
@@ -114,9 +126,9 @@ Table.prototype = {
             ${_this.selection.type==='radio'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-radio"></th>`:``}
             ${_this.selection.type==='checkbox'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-checkbox"><input type="checkbox" name="x-input-checkbox-all"></th>`:``}`;
         $.each(_this.title, function(index, each_title) {
-            if (typeof each_title.show === "undefined" || each_title.show) {//【兼容：以后删除if判断】
+            if (typeof each_title.show === "undefined" || each_title.show) { //【兼容：以后删除if判断】
                 table_html += `
-            <th width="${each_title.width}%" ${each_title.key?`keyName="${each_title.key}"`:''} ${each_title.sort?`sort="${each_title.sort}"`:``}>${each_title.name}<i></i></th>`;
+            <th width="${each_title.width}%" ${each_title.key?`keyName="${each_title.key}"`:''} ${each_title.sort?`sort`:``}>${each_title.name}<i></i></th>`;
             }
         });
         table_html += `</tr>
@@ -146,7 +158,7 @@ Table.prototype = {
                             <input type="checkbox" name="x-input-checkbox">
                         </td>`:``}`;
                 $.each(_this.title, function(index, each_title) {
-                    if (typeof each_title.show === "undefined" || each_title.show) {//【兼容：以后删除if判断】
+                    if (typeof each_title.show === "undefined" || each_title.show) { //【兼容：以后删除if判断】
                         var td_data = each_data[each_title.key];
                         if (each_title.formatter) {
                             // 如果有formatter，用formatter处理
@@ -205,14 +217,20 @@ Table.prototype = {
         this.bind_event_page();
     },
     // 调用ajax刷新，具体刷新方式根据所传参数决定
-    refresh_all_kinds: function(refresh_type, backEnd_sort_params) {
+    refresh_all_kinds: function(refresh_type) {
         if (refresh_type === this.refresh_type.INIT || refresh_type === this.refresh_type.OUTER_REFRESH) {
             // 将页数设为第一页
             this.current_page = 1;
         }
         var ajax_params;
-        if (refresh_type === this.refresh_type.BACKEND_SORT) {
-            ajax_params = backEnd_sort_params;
+        if (this.sort=='back'&&this.sort_name) {
+        	// 后台排序 ，并且有排序相关参数
+            ajax_params = {
+                page: this.current_page,
+                number: this.each_page_data_number,
+                sort_name: this.sort_name,
+                sort_method: this.sort_method
+            };
         } else {
             ajax_params = {
                 page: this.current_page,
@@ -220,6 +238,7 @@ Table.prototype = {
             };
         }
         $.extend(ajax_params, this.search_terms);
+
         var _this = this;
         $.ajax({
             url: this.url,
@@ -231,23 +250,21 @@ Table.prototype = {
                 // 获取新数据、新数据总数
                 _this.data = res.data;
                 _this.sum = res.count; //【兼容：以后改！！！】
+
+                // 如果在前台排序，刷新表格后，为了维持和之前一样的排序效果，需要先对data排序
+                _this.refresh_frontSort_effectes();
+
                 switch (refresh_type) {
                     case _this.refresh_type.INIT:
                         // 初始化
                         // 重置"选择项"
                         _this.reset_selected();
-                        // 重置"排序方式"
-                        _this.reset_sort_methods();
                         break;
                     case _this.refresh_type.PAGE_CHANGE:
                         // 由分页操作引起的刷新
-                        // 重置"排序方式"
-                        _this.reset_sort_methods();
                         break;
                     case _this.refresh_type.OUTER_REFRESH:
                         // 外部调用刷新
-                        // 重置"排序方式"
-                        _this.reset_sort_methods();
                         // 重置"选择项"
                         _this.reset_selected();
                         break;
@@ -316,6 +333,40 @@ Table.prototype = {
         }
     },
 
+    // 刷新表格后，需要维持和之前一样的排序效果。
+    // 如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
+    // 后台排序：只需要在ajax请求时，加上排序相关参数
+    refresh_frontSort_effectes: function() {
+        var _this = this;
+        if (this.sort === 'front') {
+            // 排序思路：将data排序，重刷表格
+            switch (this.sort_method) {
+                case 'original':
+                    // 之前的排序是0（不排）。现在仍然不排
+                    break;
+                case 'asc':
+                    // 之前的排序是1（升序）。现在仍然是1（升序）
+                    _this.data.sort(function(data1, data2) {
+                        if (data1[_this.sort_name] > data2[_this.sort_name]) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    });
+                    break;
+                case 'desc':
+                    // 之前的排序是2（降序）。现在仍然是2（降序）
+                    _this.data.sort(function(data1, data2) {
+                        if (data1[_this.sort_name] > data2[_this.sort_name]) {
+                            return -1;
+                        } else {
+                            return 1;
+                        }
+                    });
+                    break;
+            }
+        }
+    },
     /*
      *      
      *  --------- 2 非核心逻辑函数 ---------
@@ -465,14 +516,8 @@ Table.prototype = {
         }, 0);
     },
     // 后台排序时，调用该函数来刷新
-    refresh_backEnd_sort: function(sort_name, sort_method) {
-        var backEnd_sort_params = {
-            page: this.current_page,
-            number: this.each_page_data_number,
-            sort_name: sort_name,
-            sort_method: sort_method
-        };
-        this.refresh_all_kinds(this.refresh_type.BACKEND_SORT, backEnd_sort_params);
+    refresh_backEnd_sort: function() {
+        this.refresh_all_kinds(this.refresh_type.BACKEND_SORT);
     },
 
     // 【绑定事件】单选、多选效果
@@ -578,74 +623,80 @@ Table.prototype = {
     // 【绑定事件】点击表头排序
     bind_event_sort: function() {
         var _this = this;
-        // 需要前台排序的列
-        var front_th = _this.container.find('.x-table th[sort="1"]');
-        front_th.click(function() {
-            // 排序思路：将data排序，重刷表格            
-            var sort_name = $(this).attr('keyName');;
-            var index = _this.container.find('.x-table th[sort]').index($(this));
-            var sort_method = _this.sort_methods[index];
-            switch (sort_method) {
-                case 0:
-                    // 现在是0（不排）。变成1升序排
-                    _this.sort_methods[index] = 1;
-                    _this.data.sort(function(data1, data2) {
-                        if (data1[sort_name] > data2[sort_name]) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
-                    });
-                    break;
-                case 1:
-                    // 现在是1（升序）。变成2降序排
-                    _this.sort_methods[index] = 2;
-                    _this.data.sort(function(data1, data2) {
-                        if (data1[sort_name] > data2[sort_name]) {
-                            return -1;
-                        } else {
-                            return 1;
-                        }
-                    });
-                    break;
-                case 2:
-                    // 现在是2（降序）。变成1升序排
-                    _this.sort_methods[index] = 1;
-                    _this.data.sort(function(data1, data2) {
-                        if (data1[sort_name] > data2[sort_name]) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
-                    });
-            }
-            _this.refresh_frontEnd_sort();
-        });
-        // 需要后台排序的列
-        var back_th = _this.container.find('.x-table th[sort="2"]');
-
-        back_th.click(function() {
-            var sort_name = $(this).attr('keyName');;
-            var index = _this.container.find('.x-table th[sort]').index($(this));
-            var sort_method = _this.sort_methods[index];
-            switch (sort_method) {
-                case 0:
-                    // 现在是0（不排）。变成1升序排
-                    _this.sort_methods[index] = 1;
-                    sort_method = 'asc';
-                    break;
-                case 1:
-                    // 现在是1（升序）。变成2降序排
-                    _this.sort_methods[index] = 2;
-                    sort_method = 'desc';
-                    break;
-                case 2:
-                    // 现在是2（降序）。变成1升序排
-                    _this.sort_methods[index] = 1;
-                    sort_method = 'asc';
-            }
-            _this.refresh_backEnd_sort(sort_name, sort_method);
-        });
+        switch (this.sort) {
+            // 前台排序
+            case 'front':
+                var front_th = _this.container.find('.x-table th[sort]');
+                front_th.click(function() {
+                    // 排序思路：将data排序，重刷表格            
+                    _this.sort_name = $(this).attr('keyName');;
+                    var index = _this.container.find('.x-table th[sort]').index($(this));
+                    switch (_this.sort_methods[index]) {
+                        case 0:
+                            // 现在是0（不排）。变成1升序排
+                            _this.sort_methods[index] = 1;
+                            _this.sort_method = 'asc';
+                            _this.data.sort(function(data1, data2) {
+                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
+                                    return 1;
+                                } else {
+                                    return -1;
+                                }
+                            });
+                            break;
+                        case 1:
+                            // 现在是1（升序）。变成2降序排
+                            _this.sort_methods[index] = 2;
+                            _this.sort_method = 'desc';
+                            _this.data.sort(function(data1, data2) {
+                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
+                                    return -1;
+                                } else {
+                                    return 1;
+                                }
+                            });
+                            break;
+                        case 2:
+                            // 现在是2（降序）。变成1升序排
+                            _this.sort_methods[index] = 1;
+                            _this.sort_method = 'asc';
+                            _this.data.sort(function(data1, data2) {
+                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
+                                    return 1;
+                                } else {
+                                    return -1;
+                                }
+                            });
+                    }
+                    _this.refresh_frontEnd_sort();
+                });
+                break;
+                // 后台排序
+            case 'back':
+                var back_th = _this.container.find('.x-table th[sort]');
+                back_th.click(function() {
+                    _this.sort_name = $(this).attr('keyName');;
+                    var index = _this.container.find('.x-table th[sort]').index($(this));
+                    switch (_this.sort_methods[index]) {
+                        case 0:
+                            // 现在是0（不排）。变成1升序排
+                            _this.sort_methods[index] = 1;
+                            _this.sort_method = 'asc';
+                            break;
+                        case 1:
+                            // 现在是1（升序）。变成2降序排
+                            _this.sort_methods[index] = 2;
+                            _this.sort_method = 'desc';
+                            break;
+                        case 2:
+                            // 现在是2（降序）。变成1升序排
+                            _this.sort_methods[index] = 1;
+                            _this.sort_method = 'asc';
+                    }
+                    _this.refresh_backEnd_sort();
+                });
+                break;
+        }
     },
     // 【绑定事件】分页相关事件
     bind_event_page: function() {
@@ -708,7 +759,7 @@ Table.prototype = {
      *  
      *  
      *   refresh_page_range()：更新页数范围
-     *   reset_sort_methods()：重置"排序方式"
+     *   reset_sort_methods()：初始化"排序方式"
      *   reset_selected()：重置"选择项"
      *   refresh_type：刷新方式（常量）
      *  
@@ -726,7 +777,7 @@ Table.prototype = {
         this.current_page_max = this.current_page_min + this.data.length - 1;
     },
 
-    // 重置"排序方式"
+    // 初始化"排序方式"
     reset_sort_methods: function() {
         // 将所有排序列的sort_method，初始化为0 [0:original;1:asc;2:desc]
         this.sort_methods = [];
@@ -735,6 +786,7 @@ Table.prototype = {
                 this.sort_methods.push(0);
             }
         }
+		this.sort_method='original';
     },
 
     // 重置"选择项"
@@ -754,6 +806,7 @@ Table.prototype = {
         BACKEND_SORT: 4,
     },
 
+    // 
     // 修正constructor指向
     constructor: Table,
 

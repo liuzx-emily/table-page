@@ -34,7 +34,7 @@
                 return "...";
             },
             operation:true,         // 如果当前列是操作列(有可点击的按钮)，必须把此项置为true。默认为false
-            sort:1,                 // n点击排序[0不排序;1当前页排;2所有数据排(需要后台支持)]
+            sort:true,                      // 点击th排序 默认false
         }],
 
         /* -----选填参数----- */
@@ -68,7 +68,11 @@
                 return "...;"
             },
         },
-        
+
+        // 功能：排序    
+        // 排序方法：'back'后台所有数据排序;'front'[默认]前台当前页数据排序
+        this.sort='front';
+
         // 每页几条数据 默认为10 
         each_page_data_number: 20,
 
@@ -87,13 +91,14 @@
 
 
 
+
 -----------------------------------------------------------------------------
 
 前后交互格式说明：
     url: 初始化参数中设置的url        
 	前 -> 后：json格式
         {
-            page:1,         //当前页数
+            page:2,         //当前页数
             number:20,      //每页几条数据
             year:2017,      //搜索条件(search_terms中的）
             name:'Liu'		//搜索条件(search_terms中的）
@@ -106,6 +111,7 @@
             sum:30,       //数据总数
         }
 
+
 ------------------------------实例------------------------------
 
 初始化：
@@ -116,7 +122,7 @@
         id: 'tableDivPage',
 
         // ajax请求数据的地址    
-        url: basePath+"xx/yy.do",
+        url: "xx/yy.do",
 
         // 数据标识符  格式["","",...] 每条数据的pid会以属性的形式存在当前行tr中
         pid:["NAME","AGE","FLAG"],
@@ -132,12 +138,12 @@
             key: 'IS_ENABLE',
             formatter:function(value){
                 switch(value){
-                case "1":
-                    return '启用';
-                case "0":
-                    return '不启用';
+                    case "1":
+                        return '启用';
+                    case "0":
+                        return '不启用';
+                }
             }
-          }
         }, {
             name: '操作',
             width: 40,     
