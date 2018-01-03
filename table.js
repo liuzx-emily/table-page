@@ -2,7 +2,7 @@
 
 function Table(init_params) {
     // 容器ID【必填】
-    this.container = $("#" + init_params.container_id); //【兼容：以后改名！！！】
+    this.container = $("#" + init_params.id);
 
     // ajax请求数据的地址【必填】
     this.url = init_params.url;
@@ -11,33 +11,33 @@ function Table(init_params) {
     this.pid = init_params.pid;
 
     // 标题行【必填】
-    this.title = init_params.title_bar; //【兼容：以后改名！！！】
+    this.title = init_params.title;
 
     // 搜索条件【选填】    
-    this.search_terms = init_params.extra || {}; //【兼容：以后改名！！！】
+    this.search_terms = init_params.search_terms || {};
 
     // 每页几条数据【选填，默认为10】
     this.each_page_data_number = init_params.each_page_data_number || 10;
 
     // 功能：自动序号【选填】
     init_params.auto_index = init_params.auto_index || {};
-    this.auto_index = { //【兼容：以后改名！！！】
-        show: init_params.auto_index._if || false,
-        title: init_params.auto_index._title || '序号',
-        width: init_params.auto_index._width || 2
+    this.auto_index = {
+        show: init_params.auto_index.show || false,
+        title: init_params.auto_index.title || '序号',
+        width: init_params.auto_index.width || 2
     };
 
     // 功能：单选、多选【选填】
     init_params.selection = init_params.selection || {};
-    this.selection = { //【兼容：以后改名！！！】
-        type: init_params.selection._type || 'radio', //选填'radio' 'checkbox'
-        colomn_shown: init_params.selection._colomn_shown || false,
-        width: init_params.selection._width || 2
+    this.selection = {
+        type: init_params.selection.type || 'radio', //选填'radio' 'checkbox'
+        colomn_shown: init_params.selection.colomn_shown || false,
+        width: init_params.selection.width || 2
     };
 
     // 功能：排序    
-    // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序【兼容：以后改成默认"front"！！】
-    this.sort = init_params.sort || 'back';
+    // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序
+    this.sort = init_params.sort || 'front';
 
     // 功能：更多信息【选填】    
     init_params.detail = init_params.detail || {};
@@ -46,14 +46,6 @@ function Table(init_params) {
         width: init_params.detail.width || 2,
         formatter: init_params.detail.formatter
     };
-
-    // 【兼容：以后删除！！！】
-    var _this = this;
-    if (init_params.sorted_colomn) {
-        $.each(init_params.sorted_colomn, function (index, val) {
-            _this.title[val - 1].sort = true;
-        });
-    }
 
     this.init();
 }
@@ -120,10 +112,8 @@ Table.prototype = {
         var table_html = '\n        <table class="x-table">\n            <thead>\n                <tr>';
         table_html += '\n            ' + (_this.detail.key ? '<th width=' + _this.detail.width + '% class="x-detail-btn"></th>' : '') + '\n            ' + (_this.auto_index.show ? '<th width=' + _this.auto_index.width + '% class="x-index">' + _this.auto_index.title + '</th>' : '') + '\n            ' + (_this.selection.type === 'radio' && _this.selection.colomn_shown ? '<th width=' + _this.selection.width + '% class="x-radio"></th>' : '') + '\n            ' + (_this.selection.type === 'checkbox' && _this.selection.colomn_shown ? '<th width=' + _this.selection.width + '% class="x-checkbox"><input type="checkbox" name="x-input-checkbox-all"></th>' : '');
         $.each(_this.title, function (index, each_title) {
-            if (typeof each_title.show === "undefined" || each_title.show) {
-                //【兼容：以后删除if判断】
-                table_html += '\n            <th width="' + each_title.width + '%" ' + (each_title.key ? 'keyName="' + each_title.key + '"' : '') + ' ' + (each_title.sort ? 'sort' : '') + '>' + each_title.name + '<i></i></th>';
-            }
+
+            table_html += '\n            <th width="' + each_title.width + '%" ' + (each_title.key ? 'keyName="' + each_title.key + '"' : '') + ' ' + (each_title.sort ? 'sort' : '') + '>' + each_title.name + '<i></i></th>';
         });
         table_html += '</tr>\n                </thead>\n            <tbody>';
         if (_this.data.length === 0) {
@@ -134,25 +124,23 @@ Table.prototype = {
             $.each(_this.data, function (index, each_data) {
                 table_html += '\n                    <tr ';
                 $.each(_this.pid, function (index, pid) {
-                    table_html += ' ' + pid + '=' + each_data[pid];
+                    table_html += ' zx_' + pid + '=' + each_data[pid];
                 });
                 table_html += '>';
                 table_html += '\n                        ' + (_this.detail.key ? '<td class="x-detail-btn" show=0 operation>+</td>' : '') + '\n                        ' + (_this.auto_index.show ? '<td class="x-index">' + (index + 1) + '</td>' : '') + '\n                        ' + (_this.selection.type === 'radio' && _this.selection.colomn_shown === true ? '\n                        <td class="x-radio">\n                            <input type="radio" name="x-input-radio">\n                        </td>' : '') + '\n                        ' + (_this.selection.type === 'checkbox' && _this.selection.colomn_shown === true ? '\n                        <td class="x-checkbox">\n                            <input type="checkbox" name="x-input-checkbox">\n                        </td>' : '');
                 $.each(_this.title, function (index, each_title) {
-                    if (typeof each_title.show === "undefined" || each_title.show) {
-                        //【兼容：以后删除if判断】
-                        var td_data = each_data[each_title.key];
-                        if (each_title.formatter) {
-                            // 如果有formatter，用formatter处理
-                            td_data = each_title.formatter(td_data);
-                        }
-                        if (each_title.operation) {
-                            // 是"操作类"单元格(添加operation属性，不添加title属性)
-                            table_html += '<td operation>' + td_data + '</td>';
-                        } else {
-                            // 普通单元格(不添加operation属性，添加title属性)
-                            table_html += '<td title="' + td_data + '">' + td_data + '</td>';
-                        }
+
+                    var td_data = each_data[each_title.key];
+                    if (each_title.formatter) {
+                        // 如果有formatter，用formatter处理
+                        td_data = each_title.formatter(td_data);
+                    }
+                    if (each_title.operation) {
+                        // 是"操作类"单元格(添加operation属性，不添加title属性)
+                        table_html += '<td operation>' + td_data + '</td>';
+                    } else {
+                        // 普通单元格(不添加operation属性，添加title属性)
+                        table_html += '<td title="' + td_data + '">' + td_data + '</td>';
                     }
                 });
                 table_html += '</tr>';
@@ -212,7 +200,7 @@ Table.prototype = {
             success: function success(res) {
                 // 获取新数据、新数据总数
                 _this.data = res.data;
-                _this.sum = res.count; //【兼容：以后改！！！】
+                _this.sum = res.sum;
 
                 // 如果在前台排序，刷新表格后，为了维持和之前一样的排序效果，需要先对data排序
                 _this.refresh_frontSort_effectes();
@@ -264,7 +252,7 @@ Table.prototype = {
             this.container.find('input[name="x-input-radio"]').prop('checked', false);
             // 如果单选的内容在当前页
             current_page_tr.each(function (index, tr) {
-                var first_pid_value = $(tr).attr(_this.pid[0]);
+                var first_pid_value = $(tr).attr("zx_" + _this.pid[0]);
                 if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                     // 单选选中内容在当前页
                     $(tr).find('input[name="x-input-radio"]').prop('checked', true);
@@ -277,7 +265,7 @@ Table.prototype = {
                 this.container.find('input[name="x-input-checkbox"]').prop('checked', false);
                 // 如果多选的内容在当前页
                 current_page_tr.each(function (index, tr) {
-                    var first_pid_value = $(tr).attr(_this.pid[0]);
+                    var first_pid_value = $(tr).attr("zx_" + _this.pid[0]);
                     if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                         // 多选选中内容在当前页
                         $(tr).find('input[name="x-input-checkbox"]').prop('checked', true);
@@ -349,7 +337,7 @@ Table.prototype = {
      */
     // 添加css样式：加在style标签中，style标签放到body末尾
     add_style: function add_style() {
-        var style = '\n        <!-- table\u7EC4\u4EF6\u7684css -->\n        <style id="table-css">\n        table.x-table {\n            border-collapse: collapse;\n            width: 100%;\n            background:white;\n        }\n        /*\u81EA\u52A8\u5E8F\u53F7\u3001\u5355\u9009\u3001\u591A\u9009\uFF1A\u6587\u5B57\u5C45\u4E2D*/\n        table.x-table .x-index,table.x-table .x-radio,table.x-table .x-checkbox{\n            text-align: center;\n        }\n        /*th*/\n        table.x-table th{\n            background: #009de1;\n            color: #fff;\n            text-align: center;\n            height: 30px;            \n            font-size: 13px;\n            padding: 0;\n        }\n        /*td*/\n        table.x-table td{\n            color: #646464;\n            text-align: center;\n            border-bottom: 1px dashed #cfcfcf;\n            height: 35px;\n            font-size: 14px;\n            padding: 0;\n            cursor:pointer;\n        }\n        /*\u591A\u9009\u65F6\uFF0C\u8868\u5934\u7684\u5168\u9009\u6309\u94AE*/\n        table.x-table thead input[name="x-input-checkbox-all"]{\n            margin-top:5px;\n        }\n        /*\u589E\u5220\u6539\u6309\u94AE*/\n        table.x-table td a,table.x-table td input[type=\'button\']{\n            display: inline-block;\n            background: #ff9600;\n            color: #fff;\n            padding: 3px 10px;\n            margin: 0 5px;\n            border-radius: 3px;\n        }\n        /*\u6DFB\u52A0\u4E86\u6392\u5E8F\u529F\u80FD\u7684\u5217\u7684th*/\n        table.x-table th[sort]{\n            cursor: pointer;\n            position:relative;\n        }\n        table.x-table th[sort]>i{\n            position: relative;\n            display: inline-block;\n            width: 16px;\n            height: 18px;\n            top: 7px;\n            left: 5px;\n            background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAkklEQVQoU7WS2Q0CMQxEnzuASoAK2BIoiY4QFcB2AJVAB4PGOFI4JPJDfmzHfo6PBHUkLYCTzYjYWEq6WDQ7feVowesC2r16O/UucwaPAGdgC1yB1QiwByZgB9x+Aq2M6uWlZkmfPfwFAJbAAZhzfN0uvpYEeB+e4nEUcE5PcRoFnsER93fAT/tr5BLra1jNYCsPDaRqRFZ8Da0AAAAASUVORK5CYII=") no-repeat 0 0;\n        }\n        /*  "\u8BE6\u60C5+" \u5217*/\n        table.x-table td.x-detail-btn{\n            font-weight:bold;\n            font-size:20px;\n            color:#097abf;\n        }\n        table.x-table td.x-detail-btn:hover{\n            color:#60c3ff;\n        }        \n        /*\u81EA\u52A8\u6362\u884C*/\n        table.x-table th,table.x-table td{\n            word-break:break-all;\n            word-wrap:break-word;\n        }\n        /*\u9009\u4E2D\u6548\u679C*/\n        table.x-table .selected td {\n            background-color: #ffeee2;\n        }\n        /*\u5E95\u90E8\u5206\u9875*/\n        .x-table-page{\n            line-height: 50px;\n            color: #646464;\n            font-size: 13px;\n            position: relative;\n            padding-left:20px;       \n        }\n        .x-table-page .x-table-page-right{\n            position: absolute;\n            right: 0;\n            top: 0;\n        }\n        .x-table-page a{\n            padding: 2px 7px;\n            border: 1px solid #ccc;\n            margin: 0 5px;\n            color: #555;\n            text-decoration: none;\n            vertical-align: top;\n        }\n        .x-table-page input[type="text"]{\n            width: 23px;\n            height: 19px;\n            border: 1px solid #ccc;\n        }\n        </style>';
+        var style = '\n        <!-- table\u7EC4\u4EF6\u7684css -->\n        <style id="table-css">\n        table.x-table {\n            border-collapse: collapse;\n            width: 100%;\n            background:white;\n        }\n        /*\u81EA\u52A8\u5E8F\u53F7\u3001\u5355\u9009\u3001\u591A\u9009\uFF1A\u6587\u5B57\u5C45\u4E2D*/\n        table.x-table .x-index,table.x-table .x-radio,table.x-table .x-checkbox{\n            text-align: center;\n        }\n        /*th*/\n        table.x-table th{\n            background: #009de1;\n            color: #fff;\n            text-align: center;\n            height: 30px;            \n            font-size: 13px;\n            padding: 0;\n        }\n        /*td*/\n        table.x-table td{\n            color: #646464;\n            text-align: center;\n            border-bottom: 1px dashed #cfcfcf;\n            height: 35px;\n            font-size: 14px;\n            padding: 0;\n            cursor:pointer;\n        }\n        /*\u591A\u9009\u65F6\uFF0C\u8868\u5934\u7684\u5168\u9009\u6309\u94AE*/\n        table.x-table thead input[name="x-input-checkbox-all"]{\n            margin-top:5px;\n        }\n        /*\u589E\u5220\u6539\u6309\u94AE*/\n        table.x-table td a,table.x-table td input[type=\'button\']{\n            display: inline-block;\n            background: #ff9600;\n            color: #fff;\n            padding: 3px 10px;\n            margin: 0 5px;\n            border-radius: 3px;\n            text-decoration: none;\n        }\n        /*\u6DFB\u52A0\u4E86\u6392\u5E8F\u529F\u80FD\u7684\u5217\u7684th*/\n        table.x-table th[sort]{\n            cursor: pointer;\n            position:relative;\n        }\n        table.x-table th[sort]>i{\n            position: relative;\n            display: inline-block;\n            width: 16px;\n            height: 18px;\n            top: 3px;\n            left: 5px;\n            vertical-align: top;\n            background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAkklEQVQoU7WS2Q0CMQxEnzuASoAK2BIoiY4QFcB2AJVAB4PGOFI4JPJDfmzHfo6PBHUkLYCTzYjYWEq6WDQ7feVowesC2r16O/UucwaPAGdgC1yB1QiwByZgB9x+Aq2M6uWlZkmfPfwFAJbAAZhzfN0uvpYEeB+e4nEUcE5PcRoFnsER93fAT/tr5BLra1jNYCsPDaRqRFZ8Da0AAAAASUVORK5CYII=") no-repeat 0 0;\n        }\n        /*  "\u8BE6\u60C5+" \u5217*/\n        table.x-table td.x-detail-btn{\n            font-weight:bold;\n            font-size:20px;\n            color:#097abf;\n        }\n        table.x-table td.x-detail-btn:hover{\n            color:#60c3ff;\n        }        \n        /*\u81EA\u52A8\u6362\u884C*/\n        table.x-table th,table.x-table td{\n            word-break:break-all;\n            word-wrap:break-word;\n        }\n        /*\u9009\u4E2D\u6548\u679C*/\n        table.x-table .selected td {\n            background-color: #ffeee2;\n        }\n        /*\u5E95\u90E8\u5206\u9875*/\n        .x-table-page{\n            line-height: 50px;\n            color: #646464;\n            font-size: 13px;\n            position: relative;\n            padding-left:20px;       \n        }\n        .x-table-page .x-table-page-right{\n            position: absolute;\n            right: 0;\n            top: 0;\n        }\n        .x-table-page a{\n            padding: 2px 7px;\n            border: 1px solid #ccc;\n            margin: 0 5px;\n            color: #555;\n            text-decoration: none;\n            vertical-align: top;\n            display: inline;\n        }\n        .x-table-page input[type="text"]{\n            width: 23px;\n            height: 19px;\n            border: 1px solid #ccc;\n        }\n        </style>';
         $('body').append(style);
     },
     // 清除所有已选项
@@ -392,14 +380,14 @@ Table.prototype = {
                 var td = this;
                 var info = {};
                 $.each(_this.pid, function (index, pid) {
-                    info[pid] = $(td).parents('tr').attr(pid);
+                    info[pid] = $(td).parents('tr').attr("zx_" + pid);
                 });
                 // 存储所有选中data的所有信息，格式[{x1:x11,y1:y11}]
                 _this.selected_info = [info];
 
                 // 存储所有选中data的第一个pid指定的信息，格式[x11]
                 // 目的：为了判断选中状态时方便
-                var info_firstPid = $(td).parents('tr').attr(_this.pid[0]);
+                var info_firstPid = $(td).parents('tr').attr("zx_" + _this.pid[0]);
                 _this.selected_firstPid = [info_firstPid];
 
                 // 更新单选、多选的视觉效果

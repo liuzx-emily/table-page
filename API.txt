@@ -71,7 +71,7 @@
 
         // 功能：排序    
         // 排序方法：'back'后台所有数据排序;'front'[默认]前台当前页数据排序
-        this.sort='front';
+        sort:'front';
 
         // 每页几条数据 默认为10 
         each_page_data_number: 20,
@@ -193,7 +193,7 @@
 点击操作按钮，获取当前行数据的pid：
     function xg(object){
         // 从当前行tr取到所需pid
-        var id=$(object).parents('tr').attr('codemapid');
+        var id=$(object).parents('tr').attr('zx_codemapid');
 
         .....增删改操作...
 

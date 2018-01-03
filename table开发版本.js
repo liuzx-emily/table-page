@@ -1,6 +1,6 @@
 function Table(init_params) {
     // 容器ID【必填】
-    this.container = $("#" + init_params.container_id); //【兼容：以后改名！！！】
+    this.container = $("#" + init_params.id);
 
     // ajax请求数据的地址【必填】
     this.url = init_params.url;
@@ -9,33 +9,33 @@ function Table(init_params) {
     this.pid = init_params.pid;
 
     // 标题行【必填】
-    this.title = init_params.title_bar; //【兼容：以后改名！！！】
+    this.title = init_params.title;
 
     // 搜索条件【选填】    
-    this.search_terms = init_params.extra || {}; //【兼容：以后改名！！！】
+    this.search_terms = init_params.search_terms || {};
 
     // 每页几条数据【选填，默认为10】
     this.each_page_data_number = init_params.each_page_data_number || 10;
 
     // 功能：自动序号【选填】
     init_params.auto_index = init_params.auto_index || {};
-    this.auto_index = { //【兼容：以后改名！！！】
-        show: init_params.auto_index._if || false,
-        title: init_params.auto_index._title || '序号',
-        width: init_params.auto_index._width || 2
+    this.auto_index = {
+        show: init_params.auto_index.show || false,
+        title: init_params.auto_index.title || '序号',
+        width: init_params.auto_index.width || 2
     };
 
     // 功能：单选、多选【选填】
     init_params.selection = init_params.selection || {};
-    this.selection = { //【兼容：以后改名！！！】
-        type: init_params.selection._type || 'radio', //选填'radio' 'checkbox'
-        colomn_shown: init_params.selection._colomn_shown || false,
-        width: init_params.selection._width || 2,
+    this.selection = {
+        type: init_params.selection.type || 'radio', //选填'radio' 'checkbox'
+        colomn_shown: init_params.selection.colomn_shown || false,
+        width: init_params.selection.width || 2,
     };
 
     // 功能：排序    
-    // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序【兼容：以后改成默认"front"！！】
-    this.sort = init_params.sort || 'back';
+    // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序
+    this.sort = init_params.sort || 'front';
 
     // 功能：更多信息【选填】    
     init_params.detail = init_params.detail || {};
@@ -44,14 +44,6 @@ function Table(init_params) {
         width: init_params.detail.width || 2,
         formatter: init_params.detail.formatter
     };
-
-    // 【兼容：以后删除！！！】
-    var _this = this;
-    if (init_params.sorted_colomn) {
-        $.each(init_params.sorted_colomn, function(index, val) {
-            _this.title[val - 1].sort = true;
-        });
-    }
 
     this.init();
 }
@@ -94,9 +86,9 @@ Table.prototype = {
      *   bind_events()：绑定所有事件
      *   refresh_all_kinds()：调用ajax刷新，具体刷新方式根据所传参数决定
      *   refresh_frontSort_effectes()：
-     *   		刷新表格后，需要维持和之前一样的排序效果。
-     *  		如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
-     *			后台排序：只需要在ajax请求时，加上排序相关参数
+     *          刷新表格后，需要维持和之前一样的排序效果。
+     *          如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
+     *          后台排序：只需要在ajax请求时，加上排序相关参数
      *   
      *  ---------------------------------- 
      *      
@@ -126,10 +118,10 @@ Table.prototype = {
             ${_this.selection.type==='radio'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-radio"></th>`:``}
             ${_this.selection.type==='checkbox'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-checkbox"><input type="checkbox" name="x-input-checkbox-all"></th>`:``}`;
         $.each(_this.title, function(index, each_title) {
-            if (typeof each_title.show === "undefined" || each_title.show) { //【兼容：以后删除if判断】
-                table_html += `
+
+            table_html += `
             <th width="${each_title.width}%" ${each_title.key?`keyName="${each_title.key}"`:''} ${each_title.sort?`sort`:``}>${each_title.name}<i></i></th>`;
-            }
+
         });
         table_html += `</tr>
                 </thead>
@@ -143,7 +135,7 @@ Table.prototype = {
                 table_html += `
                     <tr `;
                 $.each(_this.pid, function(index, pid) {
-                    table_html += ' ' + pid + '=' + each_data[pid];
+                    table_html += ' zx_' + pid + '=' + each_data[pid];
                 });
                 table_html += `>`;
                 table_html += `
@@ -158,20 +150,20 @@ Table.prototype = {
                             <input type="checkbox" name="x-input-checkbox">
                         </td>`:``}`;
                 $.each(_this.title, function(index, each_title) {
-                    if (typeof each_title.show === "undefined" || each_title.show) { //【兼容：以后删除if判断】
-                        var td_data = each_data[each_title.key];
-                        if (each_title.formatter) {
-                            // 如果有formatter，用formatter处理
-                            td_data = each_title.formatter(td_data);
-                        }
-                        if (each_title.operation) {
-                            // 是"操作类"单元格(添加operation属性，不添加title属性)
-                            table_html += '<td operation>' + td_data + '</td>';
-                        } else {
-                            // 普通单元格(不添加operation属性，添加title属性)
-                            table_html += '<td title="' + td_data + '">' + td_data + '</td>';
-                        }
+
+                    var td_data = each_data[each_title.key];
+                    if (each_title.formatter) {
+                        // 如果有formatter，用formatter处理
+                        td_data = each_title.formatter(td_data);
                     }
+                    if (each_title.operation) {
+                        // 是"操作类"单元格(添加operation属性，不添加title属性)
+                        table_html += '<td operation>' + td_data + '</td>';
+                    } else {
+                        // 普通单元格(不添加operation属性，添加title属性)
+                        table_html += '<td title="' + td_data + '">' + td_data + '</td>';
+                    }
+
                 });
                 table_html += `</tr>`;
             });
@@ -223,8 +215,8 @@ Table.prototype = {
             this.current_page = 1;
         }
         var ajax_params;
-        if (this.sort=='back'&&this.sort_name) {
-        	// 后台排序 ，并且有排序相关参数
+        if (this.sort == 'back' && this.sort_name) {
+            // 后台排序 ，并且有排序相关参数
             ajax_params = {
                 page: this.current_page,
                 number: this.each_page_data_number,
@@ -249,7 +241,8 @@ Table.prototype = {
             success: function(res) {
                 // 获取新数据、新数据总数
                 _this.data = res.data;
-                _this.sum = res.count; //【兼容：以后改！！！】
+                _this.sum = res.sum;
+
 
                 // 如果在前台排序，刷新表格后，为了维持和之前一样的排序效果，需要先对data排序
                 _this.refresh_frontSort_effectes();
@@ -301,7 +294,7 @@ Table.prototype = {
             this.container.find('input[name="x-input-radio"]').prop('checked', false);
             // 如果单选的内容在当前页
             current_page_tr.each(function(index, tr) {
-                var first_pid_value = $(tr).attr(_this.pid[0]);
+                var first_pid_value = $(tr).attr("zx_"+_this.pid[0]);
                 if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                     // 单选选中内容在当前页
                     $(tr).find('input[name="x-input-radio"]').prop('checked', true);
@@ -314,7 +307,7 @@ Table.prototype = {
             this.container.find('input[name="x-input-checkbox"]').prop('checked', false);
             // 如果多选的内容在当前页
             current_page_tr.each(function(index, tr) {
-                var first_pid_value = $(tr).attr(_this.pid[0]);
+                var first_pid_value = $(tr).attr("zx_"+_this.pid[0]);
                 if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                     // 多选选中内容在当前页
                     $(tr).find('input[name="x-input-checkbox"]').prop('checked', true);
@@ -429,6 +422,7 @@ Table.prototype = {
             padding: 3px 10px;
             margin: 0 5px;
             border-radius: 3px;
+            text-decoration: none;
         }
         /*添加了排序功能的列的th*/
         table.x-table th[sort]{
@@ -440,8 +434,9 @@ Table.prototype = {
             display: inline-block;
             width: 16px;
             height: 18px;
-            top: 7px;
+            top: 3px;
             left: 5px;
+            vertical-align: top;
             background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAkklEQVQoU7WS2Q0CMQxEnzuASoAK2BIoiY4QFcB2AJVAB4PGOFI4JPJDfmzHfo6PBHUkLYCTzYjYWEq6WDQ7feVowesC2r16O/UucwaPAGdgC1yB1QiwByZgB9x+Aq2M6uWlZkmfPfwFAJbAAZhzfN0uvpYEeB+e4nEUcE5PcRoFnsER93fAT/tr5BLra1jNYCsPDaRqRFZ8Da0AAAAASUVORK5CYII=") no-repeat 0 0;
         }
         /*  "详情+" 列*/
@@ -482,6 +477,7 @@ Table.prototype = {
             color: #555;
             text-decoration: none;
             vertical-align: top;
+            display: inline;
         }
         .x-table-page input[type="text"]{
             width: 23px;
@@ -531,14 +527,14 @@ Table.prototype = {
                 var td = this;
                 var info = {};
                 $.each(_this.pid, function(index, pid) {
-                    info[pid] = $(td).parents('tr').attr(pid);
+                    info[pid] = $(td).parents('tr').attr("zx_"+pid);
                 });
                 // 存储所有选中data的所有信息，格式[{x1:x11,y1:y11}]
                 _this.selected_info = [info];
 
                 // 存储所有选中data的第一个pid指定的信息，格式[x11]
                 // 目的：为了判断选中状态时方便
-                var info_firstPid = $(td).parents('tr').attr(_this.pid[0]);
+                var info_firstPid = $(td).parents('tr').attr("zx_"+_this.pid[0]);
                 _this.selected_firstPid = [info_firstPid];
 
                 // 更新单选、多选的视觉效果
@@ -786,7 +782,7 @@ Table.prototype = {
                 this.sort_methods.push(0);
             }
         }
-		this.sort_method='original';
+        this.sort_method = 'original';
     },
 
     // 重置"选择项"
