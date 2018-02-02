@@ -1,48 +1,53 @@
-function Table(init_params) {
+function Table(params) {
     // 容器ID【必填】
-    this.container = $("#" + init_params.id);
+    this.container = $("#" + params.id);
 
     // ajax请求数据的地址【必填】
-    this.url = init_params.url;
+    this.url = params.url;
 
     // 每条数据的标识符【必填】
-    this.pid = init_params.pid;
+    this.pid = params.pid;
 
     // 标题行【必填】
-    this.title = init_params.title;
+    this.title = params.title;
 
     // 搜索条件【选填】    
-    this.search_terms = init_params.search_terms || {};
+    this.searchTerms = params.searchTerms || {};
 
-    // 每页几条数据【选填，默认为10】
-    this.each_page_data_number = init_params.each_page_data_number || 10;
+    // 每页显示的条数，值务必对应dataLimits参数的选项。
+    this.dataLimit = params.dataLimit || 10;
+    // 每页条数的选择项
+    this.dataLimits = params.dataLimits || [5, 10, 20, 50];
+
 
     // 功能：自动序号【选填】
-    init_params.auto_index = init_params.auto_index || {};
+    params.auto_index = params.auto_index || {};
     this.auto_index = {
-        show: init_params.auto_index.show || false,
-        title: init_params.auto_index.title || '序号',
-        width: init_params.auto_index.width || 2
+        show: params.auto_index.show || false,
+        title: params.auto_index.title || '序号',
+        width: params.auto_index.width || 2
     };
 
+
     // 功能：单选、多选【选填】
-    init_params.selection = init_params.selection || {};
+    params.selection = params.selection || {};
     this.selection = {
-        type: init_params.selection.type || 'radio', //选填'radio' 'checkbox'
-        colomn_shown: init_params.selection.colomn_shown || false,
-        width: init_params.selection.width || 2,
+        type: params.selection.type || 'radio', //选填'radio' 'checkbox'
+        colomn_shown: params.selection.colomn_shown || false,
+        width: params.selection.width || 2,
     };
+
 
     // 功能：排序    
     // 排序方法：'back'后台所有数据排序;'front'前台当前页数据排序
-    this.sort = init_params.sort || 'front';
+    this.sort = params.sort || 'front';
 
     // 功能：更多信息【选填】    
-    init_params.detail = init_params.detail || {};
+    params.detail = params.detail || {};
     this.detail = {
-        key: init_params.detail.key,
-        width: init_params.detail.width || 2,
-        formatter: init_params.detail.formatter
+        key: params.detail.key,
+        width: params.detail.width || 2,
+        formatter: params.detail.formatter
     };
 
     this.init();
@@ -61,10 +66,10 @@ Table.prototype = {
      *      
      */
     // 刷新表格（"对外"）
-    refresh: function(search_terms) {
-        if (search_terms) {
+    refresh: function(searchTerms) {
+        if (searchTerms) {
             // 有新的搜索条件
-            this.search_terms = search_terms;
+            this.searchTerms = searchTerms;
         }
         this.refresh_all_kinds(this.refresh_type.OUTER_REFRESH);
     },
@@ -86,9 +91,9 @@ Table.prototype = {
      *   bind_events()：绑定所有事件
      *   refresh_all_kinds()：调用ajax刷新，具体刷新方式根据所传参数决定
      *   refresh_frontSort_effectes()：
-     *          刷新表格后，需要维持和之前一样的排序效果。
-     *          如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
-     *          后台排序：只需要在ajax请求时，加上排序相关参数
+     *      刷新表格后，需要维持和之前一样的排序效果。
+     *      如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
+     *      后台排序：只需要在ajax请求时，加上排序相关参数
      *   
      *  ---------------------------------- 
      *      
@@ -103,6 +108,7 @@ Table.prototype = {
         // 初始化"排序方式"
         this.reset_sort_methods();
 
+        // 刷新表格
         this.refresh_all_kinds(this.refresh_type.INIT);
     },
     // 搭建html（包括table+分页）
@@ -111,31 +117,28 @@ Table.prototype = {
         var table_html = `
         <table class="x-table">
             <thead>
-                <tr>`;
-        table_html += `
-            ${_this.detail.key?`<th width=${_this.detail.width}% class="x-detail-btn"></th>`:``}
-            ${_this.auto_index.show?`<th width=${_this.auto_index.width}% class="x-index">${_this.auto_index.title}</th>`:``}
-            ${_this.selection.type==='radio'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-radio"></th>`:``}
-            ${_this.selection.type==='checkbox'&&_this.selection.colomn_shown?`<th width=${_this.selection.width}% class="x-checkbox"><input type="checkbox" name="x-input-checkbox-all"></th>`:``}`;
+                <tr>
+            ${_this.detail.key?`<th width="${_this.detail.width}%" class="x-detail-btn"></th>`:""}
+            ${_this.auto_index.show?`<th width="${_this.auto_index.width}%" class="x-index">${_this.auto_index.title}</th>`:""}
+            ${_this.selection.type=='radio'&&_this.selection.colomn_shown?`<th width="${_this.selection.width}%" class="x-radio"></th>`:""}
+            ${_this.selection.type=='checkbox'&&_this.selection.colomn_shown?`<th width="${_this.selection.width}%" class="x-checkbox"><input type="checkbox" name="x-input-checkbox-all"></th>`:""}`;
         $.each(_this.title, function(index, each_title) {
-
             table_html += `
-            <th width="${each_title.width}%" ${each_title.key?`keyName="${each_title.key}"`:''} ${each_title.sort?`sort`:``}>${each_title.name}<i></i></th>`;
-
+            <th width="${each_title.width}%" ${each_title.key?`keyName="${each_title.key}"`:''} ${each_title.sort?"sort":""}>${each_title.name}<i></i></th>`;
         });
-        table_html += `</tr>
-                </thead>
+        table_html += `
+                </tr>
+            </thead>
             <tbody>`;
         if (_this.data.length === 0) {
             // 无数据
             table_html += `<tr><td colspan="999" style="font-weight:bold;">暂无数据!</td></tr>`;
         } else {
-            // 有数据
             $.each(_this.data, function(index, each_data) {
                 table_html += `
                     <tr `;
                 $.each(_this.pid, function(index, pid) {
-                    table_html += ' zx_' + pid + '=' + each_data[pid];
+                    table_html += `x-${pid}="${each_data[pid]}"`;
                 });
                 table_html += `>`;
                 table_html += `
@@ -172,14 +175,12 @@ Table.prototype = {
         table_html += `</tbody>
         </table>
         <div class="x-table-page">
-            <select>
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="30">30</option>
-                <option value="50">50</option>
-            </select>
-            共${_this.sum}条数据（当前第${_this.current_page}/${Math.ceil(_this.sum/_this.each_page_data_number)||1}页）`;
+            <select>`
+        $.each(_this.dataLimits, function(index, val) {
+            table_html += `<option value="${val}">${val}</option>`;
+        });
+        table_html += `</select>
+            共${_this.sum}条数据（当前第${_this.current_page}/${Math.ceil(_this.sum/_this.dataLimit)||1}页）`;
         if (_this.selection.type === 'checkbox') {
             table_html += `
                 <a class="x-table-page-clear-all">全部取消</a>`;
@@ -195,7 +196,7 @@ Table.prototype = {
         </div>`;
         _this.container.html(table_html);
         // 将'每页几条数据'更新到页脚
-        _this.container.find(`.x-table-page select option[value=${_this.each_page_data_number}]`).prop('selected', 'true');
+        _this.container.find(`.x-table-page select option[value=${_this.dataLimit}]`).prop('selected', 'true');
     },
     // 绑定所有事件
     bind_events: function() {
@@ -219,17 +220,17 @@ Table.prototype = {
             // 后台排序 ，并且有排序相关参数
             ajax_params = {
                 page: this.current_page,
-                number: this.each_page_data_number,
+                number: this.dataLimit,
                 sort_name: this.sort_name,
                 sort_method: this.sort_method
             };
         } else {
             ajax_params = {
                 page: this.current_page,
-                number: this.each_page_data_number
+                number: this.dataLimit
             };
         }
-        $.extend(ajax_params, this.search_terms);
+        $.extend(ajax_params, this.searchTerms);
 
         var _this = this;
         $.ajax({
@@ -294,7 +295,7 @@ Table.prototype = {
             this.container.find('input[name="x-input-radio"]').prop('checked', false);
             // 如果单选的内容在当前页
             current_page_tr.each(function(index, tr) {
-                var first_pid_value = $(tr).attr("zx_"+_this.pid[0]);
+                var first_pid_value = $(tr).attr("x-" + _this.pid[0]);
                 if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                     // 单选选中内容在当前页
                     $(tr).find('input[name="x-input-radio"]').prop('checked', true);
@@ -307,7 +308,7 @@ Table.prototype = {
             this.container.find('input[name="x-input-checkbox"]').prop('checked', false);
             // 如果多选的内容在当前页
             current_page_tr.each(function(index, tr) {
-                var first_pid_value = $(tr).attr("zx_"+_this.pid[0]);
+                var first_pid_value = $(tr).attr("x-" + _this.pid[0]);
                 if ($.inArray(first_pid_value, _this.selected_firstPid) !== -1) {
                     // 多选选中内容在当前页
                     $(tr).find('input[name="x-input-checkbox"]').prop('checked', true);
@@ -478,6 +479,7 @@ Table.prototype = {
             text-decoration: none;
             vertical-align: top;
             display: inline;
+            cursor:pointer;
         }
         .x-table-page input[type="text"]{
             width: 23px;
@@ -527,14 +529,14 @@ Table.prototype = {
                 var td = this;
                 var info = {};
                 $.each(_this.pid, function(index, pid) {
-                    info[pid] = $(td).parents('tr').attr("zx_"+pid);
+                    info[pid] = $(td).parents('tr').attr("x-" + pid);
                 });
                 // 存储所有选中data的所有信息，格式[{x1:x11,y1:y11}]
                 _this.selected_info = [info];
 
                 // 存储所有选中data的第一个pid指定的信息，格式[x11]
                 // 目的：为了判断选中状态时方便
-                var info_firstPid = $(td).parents('tr').attr("zx_"+_this.pid[0]);
+                var info_firstPid = $(td).parents('tr').attr("x-" + _this.pid[0]);
                 _this.selected_firstPid = [info_firstPid];
 
                 // 更新单选、多选的视觉效果
@@ -596,7 +598,7 @@ Table.prototype = {
                 // formatter的实参          
                 var formatter_args = [];
                 for (var i = 0; i < _this.detail.key.length; i++) {
-                    formatter_args.push(tr.attr(_this.detail.key[i]));
+                    formatter_args.push(tr.attr("x-"+_this.detail.key[i]));
                 }
                 // formatter处理过后的内容
                 var content = _this.detail.formatter.apply(null, formatter_args);
@@ -699,7 +701,7 @@ Table.prototype = {
         var _this = this;
         // 分页："每页条数"发生变化时
         _this.container.find(`.x-table-page select`).change(function() {
-            _this.each_page_data_number = parseInt($(this).val());
+            _this.dataLimit = parseInt($(this).val());
             //将页数设为第一页
             _this.current_page = 1;
             _this.refresh_page_change();
@@ -715,7 +717,7 @@ Table.prototype = {
         });
         // 分页：下一页
         _this.container.find('.x-table-page-right-next').click(function() {
-            var total_page = Math.ceil(_this.sum / _this.each_page_data_number);
+            var total_page = Math.ceil(_this.sum / _this.dataLimit);
             if (total_page === 0) {
                 total_page = 1;
             }
@@ -729,7 +731,7 @@ Table.prototype = {
         // 分页：跳转
         _this.container.find('.x-table-page-right-jump').click(function() {
             var page = parseInt(_this.container.find('.x-table-page-right-page').val());
-            var total_page = Math.ceil(_this.sum / _this.each_page_data_number);
+            var total_page = Math.ceil(_this.sum / _this.dataLimit);
             if (total_page === 0) {
                 total_page = 1;
             }
@@ -768,7 +770,7 @@ Table.prototype = {
     // 更新页数范围
     refresh_page_range: function() {
         // 当前页中的第一条数据，是总起第几条
-        this.current_page_min = (this.current_page - 1) * this.each_page_data_number + 1;
+        this.current_page_min = (this.current_page - 1) * this.dataLimit + 1;
         // 当前页中的最后一条数据，是总起第几条
         this.current_page_max = this.current_page_min + this.data.length - 1;
     },

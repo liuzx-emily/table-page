@@ -1,35 +1,4 @@
-﻿------------------说明--------------------
-
-	table开发版本.js：
-        不兼容IE8，只用于开发、调试。
-
-    table.js:
-        table开发版本.js经过babel转换，得到兼容的版本。
-        兼容IE8
-
-    下一步改进：把当前行的所有数据和行关联起来
-
-
-
---------------------------------------
-
-1 初始化：
-    table1=new Table(params);
-	
-    初始化参数说明：
-    var params = {     
-        /* -----必填参数----- */  
-
-        // 容器ID
-        id: 'tableDiv',
-
-        // ajax请求数据的地址    
-        url: "xx/xxxxx.do", 
-
-        // 数据标识符  格式：["","",...] 每条数据的pid会以属性的形式存在当前行tr中
-        pid:["pid_1","pid_2"],          
-
-        // 标题行  格式：[{},{},{}...]
+// 标题行  格式：[{},{},{}...]
         title: [{
             name: '姓名',                   // 名字
             width: 12.5,                    // 列宽(%)
@@ -40,50 +9,6 @@
             operation:true,         // 如果当前列是操作列(有可点击的按钮)，必须把此项置为true。默认为false
             sort:true,                      // 点击th排序 默认false
         }],
-
-        /* -----选填参数----- */
-
-        //搜索条件 默认为{}
-        search_terms:{
-            year:2017,
-            name:'Liu'
-        },
-
-        // 功能：自动添加序号
-        auto_index: {
-            show: true,            // 是否启用，默认false
-            title: '序号',         // 标题
-            width: 5               // 列宽(%)
-        },
-
-        // 功能：单选多选
-        // 效果：选中数据行变色；可以通过get_selected()方法获取选中数据
-        selection: {
-            type: 'checkbox',     // 单选'radio'[默认]、多选'checkbox'
-            colomn_shown: true,   // 是否显示按钮列，默认false
-            width: 5              // 按钮列的列宽(%)
-        },
-        
-        // 功能：点击"+"显示更多信息
-        detail:{
-            key:['NAME','AGE'],                    // 格式：["","",..]
-            width:2,                               // "+"的列宽(%)
-            formatter:function(value1,value2){     //
-                return "...;"
-            },
-        },
-
-        // 功能：排序    
-        // 排序方法：'back'后台所有数据排序;'front'[默认]前台当前页数据排序
-        sort:'front';
-
-        // 每页几条数据 默认为10 
-        each_page_data_number: 20,
-
-    };
-
-
-
 
 2 刷新表格：
     table1.refresh(search_terms);   //有新的搜索条件（"查询"功能）
