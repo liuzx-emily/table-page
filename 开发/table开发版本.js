@@ -160,7 +160,7 @@ Table.prototype = {
                         // 不需要key，需要formatter，formatter的参数为index，取到每行数据
                         table_html += '<td crud>' + each_title.formatter(index) + '</td>';
                     } else {
-                        // 普通单元格(不添加operation属性，添加title属性)
+                        // 普通单元格(不添加crud属性，添加title属性)
                         var td_data = each_data[each_title.key];
                         if (each_title.formatter) {
                             // 如果有formatter，用formatter处理
