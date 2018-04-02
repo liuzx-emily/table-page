@@ -29,7 +29,7 @@ function Table(params) {
     // 功能：单选、多选【选填】
     params.selection = params.selection || {};
     this.selection = {
-        type: params.selection.type || 'radio',
+        type: params.selection.type || '',
         pid: params.selection.pid,
         colomn_shown: params.selection.colomn_shown || false,
         width: params.selection.width || 2,
@@ -181,7 +181,7 @@ Table.prototype = {
             table_html += `<option value="${val}">${val}</option>`;
         });
         table_html += `</select>
-            共${_this.count}条数据（当前第${_this.current_page}/${Math.ceil(_this.count/_this.dataLimit)||1}页）`;
+            共${_this.total}条数据（当前第${_this.current_page}/${Math.ceil(_this.total/_this.dataLimit)||1}页）`;
         if (_this.selection.type === 'checkbox') {
             table_html += `
                 <a class="x-table-page-clear-all">全部取消</a>`;
@@ -221,14 +221,14 @@ Table.prototype = {
             // 后台排序 ，并且有排序相关参数
             ajax_params = {
                 page: this.current_page,
-                number: this.dataLimit,
+                row: this.dataLimit,
                 sort_name: this.sort_name,
                 sort_method: this.sort_method
             };
         } else {
             ajax_params = {
                 page: this.current_page,
-                number: this.dataLimit
+                row: this.dataLimit
             };
         }
         $.extend(ajax_params, this.searchTerms);
@@ -243,7 +243,7 @@ Table.prototype = {
             success: function(res) {
                 // 获取新数据、新数据总数
                 _this.data = res.data;
-                _this.count = res.count;
+                _this.total = res.total;
 
 
                 // 如果在前台排序，刷新表格后，为了维持和之前一样的排序效果，需要先对data排序
@@ -342,21 +342,13 @@ Table.prototype = {
                 case 'asc':
                     // 之前的排序是1（升序）。现在仍然是1（升序）
                     _this.data.sort(function(data1, data2) {
-                        if (data1[_this.sort_name] > data2[_this.sort_name]) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
+                    	return data1[_this.sort_name] - data2[_this.sort_name];
                     });
                     break;
                 case 'desc':
                     // 之前的排序是2（降序）。现在仍然是2（降序）
                     _this.data.sort(function(data1, data2) {
-                        if (data1[_this.sort_name] > data2[_this.sort_name]) {
-                            return -1;
-                        } else {
-                            return 1;
-                        }
+                    	return data2[_this.sort_name] - data1[_this.sort_name];
                     });
                     break;
             }
@@ -633,11 +625,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 1;
                             _this.sort_method = 'asc';
                             _this.data.sort(function(data1, data2) {
-                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
-                                    return 1;
-                                } else {
-                                    return -1;
-                                }
+                            	return data1[_this.sort_name] - data2[_this.sort_name];
                             });
                             break;
                         case 1:
@@ -645,11 +633,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 2;
                             _this.sort_method = 'desc';
                             _this.data.sort(function(data1, data2) {
-                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
-                                    return -1;
-                                } else {
-                                    return 1;
-                                }
+                            	return data2[_this.sort_name] - data1[_this.sort_name];
                             });
                             break;
                         case 2:
@@ -657,11 +641,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 1;
                             _this.sort_method = 'asc';
                             _this.data.sort(function(data1, data2) {
-                                if (data1[_this.sort_name] > data2[_this.sort_name]) {
-                                    return 1;
-                                } else {
-                                    return -1;
-                                }
+                            	return data1[_this.sort_name] - data2[_this.sort_name];
                             });
                     }
                     _this.refresh_frontEnd_sort();
@@ -715,7 +695,7 @@ Table.prototype = {
         });
         // 分页：下一页
         _this.container.find('.x-table-page-right-next').click(function() {
-            var total_page = Math.ceil(_this.count / _this.dataLimit);
+            var total_page = Math.ceil(_this.total / _this.dataLimit);
             if (total_page === 0) {
                 total_page = 1;
             }
@@ -729,7 +709,7 @@ Table.prototype = {
         // 分页：跳转
         _this.container.find('.x-table-page-right-jump').click(function() {
             var page = parseInt(_this.container.find('.x-table-page-right-page').val());
-            var total_page = Math.ceil(_this.count / _this.dataLimit);
+            var total_page = Math.ceil(_this.total / _this.dataLimit);
             if (total_page === 0) {
                 total_page = 1;
             }
