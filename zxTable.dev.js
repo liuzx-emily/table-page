@@ -1,4 +1,4 @@
-function Table(params) {
+function zxTable(params) {
     // 容器ID【必填】
     this.container = $("#" + params.id);
 
@@ -50,69 +50,69 @@ function Table(params) {
 
     this.init();
 }
-Table.prototype = {
+zxTable.prototype = {
 
-        /*
-         *      
-         *  --------- 0 "对外"的函数 ---------  
+    /*
+     *      
+     *  --------- 0 "对外"的函数 ---------  
 
-         *   【使用本组件时，可能会调用的函数。】
-         *   refresh：刷新表格
-         *   get_selected：获取所有已选项 
-         *  
-         *  ------------------------------ 
-         *      
-         */
-        // 刷新表格（"对外"）
-        refresh: function(searchTerms) {
-            if (searchTerms) {
-                // 有新的搜索条件
-                this.searchTerms = searchTerms;
-            }
-            this.refresh_all_kinds(this.refresh_type.OUTER_REFRESH);
-        },
-        // 获取所有已选项("对外")
-        get_selected: function(name) {
-            var arr = [];
-            $.each(this.selected_info, function(index, info) {
-                arr.push(info[name]);
-            });
-            return arr;
-        },
+     *   【使用本组件时，可能会调用的函数。】
+     *   refresh：刷新表格
+     *   get_selected：获取所有已选项 
+     *  
+     *  ------------------------------ 
+     *      
+     */
+    // 刷新表格（"对外"）
+    refresh: function(searchTerms) {
+        if (searchTerms) {
+            // 有新的搜索条件
+            this.searchTerms = searchTerms;
+        }
+        this.refresh_all_kinds(this.refresh_type.OUTER_REFRESH);
+    },
+    // 获取所有已选项("对外")
+    get_selected: function(name) {
+        var arr = [];
+        $.each(this.selected_info, function(index, info) {
+            arr.push(info[name]);
+        });
+        return arr;
+    },
 
-        /*
-         *      
-         *  --------- 1 核心函数 --------- 
-         *      
-         *   init()：初始化函数
-         *   build_html()：搭建html（包括table+分页）
-         *   bind_events()：绑定所有事件
-         *   refresh_all_kinds()：调用ajax刷新，具体刷新方式根据所传参数决定
-         *   refresh_frontSort_effectes()：
-         *      刷新表格后，需要维持和之前一样的排序效果。
-         *      如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
-         *      后台排序：只需要在ajax请求时，加上排序相关参数
-         *   
-         *  ---------------------------------- 
-         *      
-         */
-        // 初始化函数
-        init: function() {
-            // 添加css
-            if ($('style#table-css').length === 0) {
-                this.add_style();
-            }
+    /*
+     *      
+     *  --------- 1 核心函数 --------- 
+     *      
+     *   init()：初始化函数
+     *   build_html()：搭建html（包括table+分页）
+     *   bind_events()：绑定所有事件
+     *   refresh_all_kinds()：调用ajax刷新，具体刷新方式根据所传参数决定
+     *   refresh_frontSort_effectes()：
+     *      刷新表格后，需要维持和之前一样的排序效果。
+     *      如果是前台排序：需要在ajax得到data后对data重新排序，再搭建html
+     *      后台排序：只需要在ajax请求时，加上排序相关参数
+     *   
+     *  ---------------------------------- 
+     *      
+     */
+    // 初始化函数
+    init: function() {
+        // 添加css
+        if ($('style#table-css').length === 0) {
+            this.add_style();
+        }
 
-            // 初始化"排序方式"
-            this.reset_sort_methods();
+        // 初始化"排序方式"
+        this.reset_sort_methods();
 
-            // 刷新表格
-            this.refresh_all_kinds(this.refresh_type.INIT);
-        },
-        // 搭建html（包括table+分页）
-        build_html: function() {
-                var _this = this;
-                var table_html = `
+        // 刷新表格
+        this.refresh_all_kinds(this.refresh_type.INIT);
+    },
+    // 搭建html（包括table+分页）
+    build_html: function() {
+        var _this = this;
+        var table_html = `
         <table class="x-table">
             <thead>
                 <tr>
@@ -136,7 +136,7 @@ Table.prototype = {
                 table_html += `
                     <tr `;
 
-                if(_this.selection.pid){
+                if (_this.selection.pid) {
                     $.each(_this.selection.pid, function(index, pid) {
                         table_html += `x-${pid}="${each_data[pid]}"`;
                     });
@@ -164,7 +164,10 @@ Table.prototype = {
                         var td_data = each_data[each_title.key];
                         if (each_title.formatter) {
                             // 如果有formatter，用formatter处理
-                            td_data = each_title.formatter(td_data);
+                            td_data = each_title.formatter(td_data, index);
+                        }else{
+                            // 没有formatter取格式化，用processNull走一遍，处理值为null的项
+                            td_data=_this.fn_processNull(td_data,each_title.processNull);
                         }
                         table_html += '<td title="' + td_data + '">' + td_data + '</td>';
                     }
@@ -172,7 +175,6 @@ Table.prototype = {
                 table_html += `</tr>`;
             });
         }
-
         table_html += `</tbody>
         </table>
         <div class="x-table-page">
@@ -231,6 +233,7 @@ Table.prototype = {
                 row: this.dataLimit
             };
         }
+        ajax_params.limitStart = (ajax_params.page - 1) * ajax_params.row;
         $.extend(ajax_params, this.searchTerms);
 
         var _this = this;
@@ -342,13 +345,13 @@ Table.prototype = {
                 case 'asc':
                     // 之前的排序是1（升序）。现在仍然是1（升序）
                     _this.data.sort(function(data1, data2) {
-                    	return data1[_this.sort_name] - data2[_this.sort_name];
+                        return data1[_this.sort_name] - data2[_this.sort_name];
                     });
                     break;
                 case 'desc':
                     // 之前的排序是2（降序）。现在仍然是2（降序）
                     _this.data.sort(function(data1, data2) {
-                    	return data2[_this.sort_name] - data1[_this.sort_name];
+                        return data2[_this.sort_name] - data1[_this.sort_name];
                     });
                     break;
             }
@@ -541,10 +544,10 @@ Table.prototype = {
                 var td = this;
                 var info = {};
                 $.each(_this.selection.pid, function(index, pid) {
-                    info[pid] = $(td).parents('tr').attr("x-" +pid);
+                    info[pid] = $(td).parents('tr').attr("x-" + pid);
                 });
                 // 取第一个pid对应的值，判断它是否在_this.selected_firstPid中，以此来判断改行数据之前是否被选中
-                var info_firstPid = $(td).parents('tr').attr("x-" +_this.selection.pid[0]);
+                var info_firstPid = $(td).parents('tr').attr("x-" + _this.selection.pid[0]);
 
                 // 新数据在选中数据中的位置
                 var position = $.inArray(info_firstPid, _this.selected_firstPid);
@@ -625,7 +628,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 1;
                             _this.sort_method = 'asc';
                             _this.data.sort(function(data1, data2) {
-                            	return data1[_this.sort_name] - data2[_this.sort_name];
+                                return data1[_this.sort_name] - data2[_this.sort_name];
                             });
                             break;
                         case 1:
@@ -633,7 +636,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 2;
                             _this.sort_method = 'desc';
                             _this.data.sort(function(data1, data2) {
-                            	return data2[_this.sort_name] - data1[_this.sort_name];
+                                return data2[_this.sort_name] - data1[_this.sort_name];
                             });
                             break;
                         case 2:
@@ -641,7 +644,7 @@ Table.prototype = {
                             _this.sort_methods[index] = 1;
                             _this.sort_method = 'asc';
                             _this.data.sort(function(data1, data2) {
-                            	return data1[_this.sort_name] - data2[_this.sort_name];
+                                return data1[_this.sort_name] - data2[_this.sort_name];
                             });
                     }
                     _this.refresh_frontEnd_sort();
@@ -770,6 +773,16 @@ Table.prototype = {
         this.selected_firstPid = [];
         this.selected_info = [];
     },
+    // 处理空数据
+    fn_processNull: function(originalTxt, replacingTxt) {
+        if (replacingTxt === undefined || replacingTxt === null) {
+            replacingTxt = "";
+        }
+        if (originalTxt === undefined || originalTxt === null || $.trim(originalTxt).length == 0 || originalTxt == "null") {
+            originalTxt = replacingTxt;
+        }
+        return originalTxt;
+    },
     // 刷新方式（refresh_all_kinds函数据此判断刷新方式）
     refresh_type: {
         // 初始化
@@ -784,6 +797,6 @@ Table.prototype = {
 
     // 
     // 修正constructor指向
-    constructor: Table
+    constructor: zxTable
 
 }
